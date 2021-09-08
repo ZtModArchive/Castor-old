@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31624.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Castor", "Castor\Castor.csproj", "{59CC75F1-DF34-4217-94E2-7E09F6251201}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{59CC75F1-DF34-4217-94E2-7E09F6251201}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59CC75F1-DF34-4217-94E2-7E09F6251201}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59CC75F1-DF34-4217-94E2-7E09F6251201}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59CC75F1-DF34-4217-94E2-7E09F6251201}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7E2FF803-F18F-4ED0-A129-C03AA1894D39}
+	EndGlobalSection
+EndGlobal
