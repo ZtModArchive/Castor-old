@@ -39,7 +39,7 @@ namespace Castor
                         Init(args);
                         break;
                     case "-v":
-                        Console.WriteLine($"Castor 1.0");
+                        Console.WriteLine($"Castor 2.0");
                         break;
                     case "install":
                     case "i":
