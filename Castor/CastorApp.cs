@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -40,6 +41,10 @@ namespace Castor
                     case "-v":
                         Console.WriteLine($"Castor 1.0");
                         break;
+                    case "install":
+                    case "i":
+                        Install(args);
+                        break;
                     default:
                     case "help":
                     case "-h":
@@ -63,7 +68,6 @@ namespace Castor
                 Environment.Exit(1);
                 return;
             }
-                
 
             string castorConfigText = File.ReadAllText("castor.json");
             CastorConfig castorConfig = JsonSerializer.Deserialize<CastorConfig>(castorConfigText);
@@ -136,6 +140,7 @@ namespace Castor
             Console.WriteLine("build - build from castor.json file");
             Console.WriteLine("init - create new castor.json file");
             Console.WriteLine("help -  display help message");
+            Console.WriteLine("install -  install packages");
             Console.WriteLine("-v -  display version");
             Environment.Exit(0);
         }
@@ -146,6 +151,7 @@ namespace Castor
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("ERROR: castor.json already exists");
+                Console.ForegroundColor = ConsoleColor.Gray;
                 Environment.Exit(1);
             }
 
@@ -165,7 +171,7 @@ namespace Castor
             {
                 ArchiveName = archiveName,
                 Z2f = true,
-                IncludeFolders = new string[] {
+                IncludeFolders = new List<string> {
                     "ai",
                     "awards",
                     "biomes",
@@ -186,8 +192,12 @@ namespace Castor
                     "world",
                     "xpinfo"
                 },
-                ExcludeFolders = new string[] {
-                    "scripts/ArluqTools"
+                ExcludeFolders = new List<string> {
+                    "scripts/modules"
+                },
+                DevDependencies = new List<string>
+                {
+
                 }
             };
 
@@ -196,8 +206,133 @@ namespace Castor
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("initialized a new castor project");
             Console.ForegroundColor = ConsoleColor.Gray;
+
+            if (CheckGit())
+            {
+                Console.WriteLine("Do you want to install ArluqTools? (Y/n)");
+                string useArluq = Console.ReadLine();
+                if (useArluq.ToLower() != "n")
+                    InstallModule("ZtModArchive/ArluqTools", true);
+            }
+
             Console.WriteLine("check out castor.json and configure it as you need. Happy coding! :)");
             Environment.Exit(0);
+        }
+
+        private bool CheckGit ()
+        {
+            using (Process p = ConsoleCommand("git --version"))
+            {
+                while(!p.WaitForExit(1000))
+                {
+
+                }
+                if (p.ExitCode == 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        private void InstallModule (string arg, bool addToConfig = false)
+        {
+            if (!CheckGit())
+                Environment.Exit(1);
+
+            Guid g = Guid.NewGuid();
+            using (Process p = ConsoleCommand($"git clone https://github.com/{arg}.git {g}"))
+            {
+                string castorConfigText = File.ReadAllText("castor.json");
+                CastorConfig castorConfig = JsonSerializer.Deserialize<CastorConfig>(castorConfigText);
+
+                while (!p.WaitForExit(1000)){}
+                if (p.ExitCode == 0)
+                {
+                    if (!Directory.Exists("scripts"))
+                        Directory.CreateDirectory("scripts");
+                    if (!Directory.Exists("scripts/modules"))
+                        Directory.CreateDirectory("scripts/modules");
+
+                    if (Directory.Exists($"{g}/scripts/modules"))
+                        Directory.Delete($"{g}/scripts/modules");
+                    CopyFilesRecursively($"{g}/scripts","scripts/modules");
+
+                    var directory = new DirectoryInfo($"{g}") { Attributes = FileAttributes.Normal };
+                    foreach (var info in directory.GetFileSystemInfos("*", SearchOption.AllDirectories))
+                    {
+                        info.Attributes = FileAttributes.Normal;
+                    }
+
+                    Directory.Delete($"{g}", true);
+
+                    if (addToConfig)
+                    {
+                        castorConfig.DevDependencies.Add(arg);
+                        string newJson = JToken.Parse(JsonSerializer.Serialize(castorConfig)).ToString();
+                        File.WriteAllText("castor.json", newJson);
+                    }
+                    
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"installed package {arg}");
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                }
+                else
+                {
+                    Environment.Exit(1);
+                }
+            }
+        }
+
+        private void Install(string[] args)
+        {
+            if (args.Length > 1)
+            {
+                InstallModule(args[1], true);
+            }
+            else
+            {
+                string castorConfigText = File.ReadAllText("castor.json");
+                CastorConfig castorConfig = JsonSerializer.Deserialize<CastorConfig>(castorConfigText);
+
+                if (castorConfig.DevDependencies.Count == 0)
+                    Environment.Exit(1);
+
+                foreach (var package in castorConfig.DevDependencies)
+                {
+                    InstallModule(package);
+                }
+            }
+        }
+
+        private Process ConsoleCommand (string arg)
+        {
+            Process process = new Process();
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            startInfo.FileName = "cmd.exe";
+            startInfo.Arguments = $"/C {arg}";
+            process.StartInfo = startInfo;
+            process.Start();
+            return process;
+        }
+
+        private static void CopyFilesRecursively(string sourcePath, string targetPath)
+        {
+            //Now Create all of the directories
+            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            {
+                Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
+            }
+
+            //Copy all the files & Replaces any files with the same name
+            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            {
+                File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
+            }
         }
     }
 }
